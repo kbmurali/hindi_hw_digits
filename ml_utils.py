@@ -18,7 +18,26 @@ from tqdm.autonotebook import tqdm
 
 import pandas as pd
 
+import random
+import os
+
 import time
+
+from mpl_toolkits.mplot3d import proj3d
+from matplotlib.patches import FancyArrowPatch
+
+def set_seed(seed: int = 42) -> None:
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    # When running on the CuDNN backend, two further options must be set
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    # Set a fixed value for the hash seed
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    print(f"Random seed set as {seed}")
+
 
 def moveTo( obj, device ):
     if isinstance( obj, list ):
@@ -191,3 +210,54 @@ def pred(model, img):
         print( y_hat )
     
     return y_hat
+
+class Arrow3D(FancyArrowPatch):
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        FancyArrowPatch.__init__(self, (0,0), (0,0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
+        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+        FancyArrowPatch.draw(self, renderer)
+
+    def do_3d_projection( self, renderer=None ):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
+        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+        return np.min(zs)
+
+def draw_contour( results_df, figsize=(10,10), title=None ):
+    wx = torch.tensor( results_df[ 'wx' ].values )
+    wy = torch.tensor( results_df[ 'wy' ].values )
+    ls = torch.tensor( results_df[ 'train loss' ].values )
+
+    fig = plt.figure( figsize=figsize )
+    ax = plt.axes(projection="3d")
+    ax.scatter3D( wx.detach().cpu().numpy(), wy.detach().cpu().numpy(), ls.detach().cpu().numpy(), s=3 )
+
+    for j in range( 1, wx.shape[0] ):
+        i = j - 1
+        Xs = [ wx[i].item(), wx[j].item() ]
+        Ys = [ wy[i].item(), wy[j].item() ]
+        Ls = [ ls[i].item(), ls[j].item() ]
+        
+        arw = Arrow3D( Xs, Ys, Ls, arrowstyle="->", color="purple", lw = 0.5, mutation_scale=9 )
+        ax.add_artist(arw)
+
+    if title is not None:
+        ax.set_title(title, fontsize=10)
+
+    ax.set_xlabel( 'Sample Weight 1' )
+    ax.set_ylabel( 'Sample Weight 2' )
+    ax.set_zlabel( 'Training Loss' )
+
+    ax.xaxis.set_tick_params( labelbottom=False )
+    ax.yaxis.set_tick_params( labelleft=False )
+    ax.zaxis.set_tick_params( labelbottom=False )
+
+    ax.set_box_aspect( aspect=None, zoom=0.8 )
+    fig.tight_layout()
+    plt.show()
+    return fig

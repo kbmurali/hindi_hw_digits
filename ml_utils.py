@@ -58,30 +58,6 @@ def moveTo( obj, device ):
     else:
         return obj
 
-def visualize2DSoftmax2(X, y, model, title=None, device="cpu" ):
-    x_min = np.min(X[:,0])-0.5
-    x_max = np.max(X[:,0])+0.5
-    y_min = np.min(X[:,1])-0.5
-    y_max = np.max(X[:,1])+0.5
-    
-    xv, yv = np.meshgrid(np.linspace(x_min, x_max, num=20), np.linspace(y_min, y_max, num=20), indexing='ij')
-    
-    xy_v = np.hstack((xv.reshape(-1,1), yv.reshape(-1,1)))
-    
-    with torch.no_grad():
-        logits = model(torch.tensor(xy_v, dtype=torch.float32, device=device))
-        y_hat = F.softmax(logits, dim=1).cpu().numpy()
-    
-    cs = plt.contourf(xv, yv, y_hat[:,0].reshape(20,20), levels=np.linspace(0,1,num=20), cmap=plt.cm.RdYlBu )
-    
-    ax = plt.gca()
-    
-    sns.scatterplot(x=X[:,0], y=X[:,1], hue=y, style=y, ax=ax)
-    
-    if title is not None:
-        ax.set_title(title)
-
-
 def run_epoch( model, optimizer, data_loader, loss_func, device="cpu", results=[], score_funcs={}, prefix=" ", desc=None ):
     running_loss = []
     y_true = []
@@ -228,7 +204,7 @@ class Arrow3D(FancyArrowPatch):
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
         return np.min(zs)
 
-def draw_contour( results_df, figsize=(10,10), title=None ):
+def draw_loss_descent( results_df, figsize=(10,10), title=None ):
     wx = torch.tensor( results_df[ 'wx' ].values )
     wy = torch.tensor( results_df[ 'wy' ].values )
     ls = torch.tensor( results_df[ 'train loss' ].values )

@@ -116,11 +116,11 @@ def train_model( model,
                  device='cpu', 
                  capture_conv_sample_weights=False, 
                  conv_index=0, 
-                 wx_bt_index=0, 
+                 wx_flt_index=0, 
                  wx_ch_index=0, 
                  wx_ro_index=0, 
                  wx_index=0,
-                 wy_bt_index=0,
+                 wy_flt_index=0,
                  wy_ch_index=0, 
                  wy_ro_index=0, 
                  wy_index=1 ):
@@ -157,8 +157,8 @@ def train_model( model,
         results["epoch"].append( epoch )
 
         if capture_conv_sample_weights == True and isinstance( model, nn.Sequential ):
-            wx = model[ conv_index ].weight[ wx_bt_index, wx_ch_index, wx_ro_index, wx_index ].item()
-            wy = model[ conv_index ].weight[ wy_bt_index, wy_ch_index, wy_ro_index, wy_index ].item()
+            wx = model[ conv_index ].weight[ wx_flt_index, wx_ch_index, wx_ro_index, wx_index ].item()
+            wy = model[ conv_index ].weight[ wy_flt_index, wy_ch_index, wy_ro_index, wy_index ].item()
             results["wx"].append( wx )
             results["wy"].append( wy )
 
